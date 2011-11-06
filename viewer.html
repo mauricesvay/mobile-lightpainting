@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Light Painting Viewer</title>
+	<style type="text/css">
+	body {
+	    background: #000;
+	}
+	</style>
+</head>
+<body>
+<canvas id="paper" width="800" height="600"></canvas>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var img;
+var yellow = new Image;
+yellow.src = "/yellow.png";
+var blue = new Image;
+blue.src = "/blue.png";
+
+var point = {
+    x : 0,
+    y : 0
+}
+var acceleration = {
+	x : 0,
+	y : 0
+};
+var velocity = {
+	x : 0,
+	y : 0
+}
+
+//Connect to server and receive acceleration values
+var server = 'http://' + document.location.host;
+var socket = io.connect(server);
+socket.on('view', function(accel) {
+	acceleration.x = accel.x;
+	acceleration.y = accel.y;
+});
+socket.on('color', function(color) {
+	if (color == 'blue') {
+		img = blue;
+	} else {
+		img = yellow;
+	}
+});
+
+/**
+ * Poll acceleration values at a constant (ahem) interval
+ */
+function poll_accel() {
+	//This is not a real physics formula
+	velocity.x += acceleration.x * .04;
+	velocity.y += acceleration.y * .04;
+	
+	//I'm cheating here
+	if (Math.abs(acceleration.x) < 0.02) {
+		velocity.x = 0;
+	}
+	if (Math.abs(acceleration.y) < 0.02) {
+		velocity.y = 0;
+	}
+	
+	point.x -= velocity.x; //this is negative so I can demo in front of people, instead of facing the screen
+	point.y += velocity.y;
+	ctx.drawImage(img, Math.round(point.x) - 10, Math.round(point.y) - 15);	
+	
+	setTimeout(poll_accel, 20);
+}
+
+/**
+ * Prepare the canvas
+ */
+var canvas = document.getElementById('paper');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+point.x = Math.round(canvas.width / 2);
+point.y = Math.round(canvas.height / 2);
+if (canvas.getContext){  
+    var ctx = canvas.getContext('2d');
+    ctx.globalCompositeOperation = 'lighter'; // "Light painting mode"
+    img = yellow;
+    img.onload = function() {
+    	poll_accel();
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Light Painting Sensor</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<style type="text/css">
+	* {
+		margin: 0;
+		padding: 0;
+	}
+	div {
+		width: 320px;
+		height: 480px;
+		background: yellow;
+	}
+	</style>
+</head>
+<body>
+<div id="light"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+//Get rid of safari toolbar on the iPhone
+window.addEventListener('load', function(){
+	setTimeout(function(){
+		window.scrollTo(0,1);
+	}, 100);
+});
+
+//Connect to server and start sending acceleration
+var server = 'http://' + document.location.host;
+var socket = io.connect(server);
+if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', function(eventData) {
+        //we using acceleration WITHOUT gravity
+        socket.emit('motion', {
+            x : eventData.acceleration.x,
+            y : eventData.acceleration.y,
+            z : eventData.acceleration.z
+        });
+    }, false);
+} else {
+    alert('Can not get motion sensor data');
+}
+
+//Tap on the yellow box to change it to blue
+var light = document.getElementById('light');
+var color = 'yellow';
+light.addEventListener('click', function() {
+	if (color == 'yellow') {
+    	color = 'blue';
+		light.style.backgroundColor = 'cyan';
+		socket.emit('color', 'blue');
+	} else {
+		color = 'yellow';
+		light.style.backgroundColor = 'yellow';
+		socket.emit('color', 'yellow');
+	}
+}, false);
+</script>
+</body>
+</html>
